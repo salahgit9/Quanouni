@@ -315,7 +315,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000/api';
+        const API_URL = '/api';
 
         function switchTab(tab) {
             const tabs = document.querySelectorAll('.tab');
@@ -395,7 +395,7 @@
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
 
-             try {
+            try {
                 const response = await fetch(`${API_URL}/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -437,4 +437,5 @@
         });
     </script>
 </body>
+
 </html>
