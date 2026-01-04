@@ -160,22 +160,38 @@ async def login(request: LoginRequest):
 
 @router.get("/cases")
 async def get_cases(current_user: dict = Depends(get_current_user)):
-    """Get cases for current user only"""
+    """Get cases for current user. Demo cases (user_id=NULL) are visible to all premium users."""
     try:
         supabase = get_supabase()
         
-        query = supabase.table("cases").select("*").order("created_at", desc=True)
+        # Admin sees all cases
+        if current_user['role'] == 'admin':
+            query = supabase.table("cases").select("*").order("created_at", desc=True)
+            response = query.execute()
+            return {"cases": response.data, "total": len(response.data)}
         
-        # Filter by user_id unless admin
-        if current_user['role'] != 'admin':
-            if current_user['id'] == 'legacy_id':
-                 # Demo mode fallback: return all (or specific logic)
-                 pass 
-            else:
-                query = query.eq("user_id", current_user['id'])
-                
-        response = query.execute()
-        return {"cases": response.data, "total": len(response.data)}
+        # Premium/Normal users: see demo cases (user_id IS NULL) + their own cases
+        # Supabase doesn't support OR filters directly, so we fetch separately and merge
+        
+        # 1. Fetch demo cases (shared with everyone)
+        demo_response = supabase.table("cases").select("*").is_("user_id", "null").execute()
+        demo_cases = demo_response.data if demo_response.data else []
+        
+        # 2. Fetch user's own cases (if not legacy/demo mode)
+        own_cases = []
+        if current_user['id'] != 'legacy_id':
+            own_response = supabase.table("cases").select("*").eq("user_id", current_user['id']).execute()
+            own_cases = own_response.data if own_response.data else []
+        
+        # 3. Merge and deduplicate (in case of overlap)
+        all_cases = {c['id']: c for c in demo_cases}
+        for c in own_cases:
+            all_cases[c['id']] = c
+        
+        # Sort by created_at descending
+        sorted_cases = sorted(all_cases.values(), key=lambda x: x.get('created_at', ''), reverse=True)
+        
+        return {"cases": sorted_cases, "total": len(sorted_cases)}
     except Exception as e:
         print(f"Error fetching cases: {e}")
         return {"cases": [], "total": 0}
@@ -191,10 +207,14 @@ async def get_case(case_id: str, current_user: dict = Depends(get_current_user))
         
         case = response.data[0]
         
-        # Ensure ownership
-        if current_user['role'] != 'admin' and current_user['id'] != 'legacy_id':
-             if case.get('user_id') and case['user_id'] != current_user['id']:
-                 raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول لهذه القضية")
+        # Allow access if: admin, demo case (no user_id), or owner
+        is_demo_case = case.get('user_id') is None
+        is_owner = case.get('user_id') == current_user['id']
+        is_admin = current_user['role'] == 'admin'
+        is_legacy = current_user['id'] == 'legacy_id'
+        
+        if not (is_admin or is_demo_case or is_owner or is_legacy):
+            raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول لهذه القضية")
                  
         return {"case": case}
     except Exception as e:
