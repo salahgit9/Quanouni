@@ -1,0 +1,32 @@
+
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Ignore data directory (too large for context, and we use Supabase)
+data/
+# Ignore verify reports and temp scripts
+*.md
+verify_rag_10.py
+debug_*.py
+reset_db_v2.py
+ingest_*.py
+check_*.py

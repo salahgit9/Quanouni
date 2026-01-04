@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+python-dotenv
+google-generativeai
+chromadb
+supabase
+python-multipart
+requests
+numpy
+pydantic
+pydantic-settings
+rank_bm25
+passlib[bcrypt]
+bcrypt==3.2.2
+python-jose[cryptography]
+groq

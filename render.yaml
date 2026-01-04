@@ -1,0 +1,15 @@
+
+services:
+  - type: web
+    name: quanouni-api
+    env: docker
+    region: frankfurt
+    plan: free
+    branch: main
+    numInstances: 1
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: PORT
+        value: 8000

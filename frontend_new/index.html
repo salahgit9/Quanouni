@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المساعد القانوني - Qanouni-AI</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome للأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts - خط عربي -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Marked.js لعرض Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- الشريط الجانبي -->
+        <nav class="sidebar">
+            <div class="logo-container">
+                <i class="fa-solid fa-scale-balanced logo-icon"></i>
+                <div class="logo-text">
+                    <h1>المساعد القانوني</h1>
+                    <span class="version">Qanouni-AI v1.0</span>
+                </div>
+            </div>
+
+            <ul class="nav-links">
+                <li class="nav-item active" data-tab="upload" data-premium="true">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>رفع الوثائق</span>
+                </li>
+                <li class="nav-item" data-tab="search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>البحث القانوني</span>
+                </li>
+                <li class="nav-item" data-tab="cases" data-premium="true">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>القضايا</span>
+                </li>
+                <li class="nav-item" data-tab="pleading" data-premium="true">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>توليد المرافعات</span>
+                </li>
+                <li class="nav-item" data-tab="jurisprudence" data-premium="true">
+                    <i class="fa-solid fa-gavel"></i>
+                    <span>الاجتهادات القضائية</span>
+                </li>
+                <li class="nav-item" data-tab="consultant">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>المستشار القانوني</span>
+                </li>
+            </ul>
+
+            <div class="theme-toggle-container">
+                <button id="theme-toggle" class="theme-btn">
+                    <i class="fa-solid fa-moon"></i>
+                    <span>الوضع الليلي</span>
+                </button>
+            </div>
+
+            <!-- معلومات المستخدم -->
+            <div class="user-info" id="user-info" style="display:none;">
+                <div class="user-details">
+                    <p class="user-name" id="user-name">مستخدم</p>
+                    <span class="user-role" id="user-role">normal</span>
+                </div>
+                <button class="logout-btn" onclick="handleLogout()" title="تسجيل الخروج">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+
+            <div class="system-status">
+                <div class="status-indicator online"></div>
+                <span>النظام يعمل</span>
+            </div>
+        </nav>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="main-content">
+
+            <!-- قسم رفع الوثائق -->
+            <section id="upload-section" class="module-section active">
+                <header class="section-header">
+                    <h2><i class="fa-solid fa-cloud-arrow-up"></i> رفع الوثائق القانونية</h2>
+                    <p>أضف القوانين والاجتهادات ونماذج المرافعات إلى قاعدة المعرفة</p>
+                </header>
+
+                <div class="upload-container">
+                    <div class="upload-controls" style="margin-bottom: 20px;">
+                        <label for="doc-type" style="display: block; margin-bottom: 8px; font-weight: bold;">نوع
+                            الوثيقة:</label>
+                        <select id="doc-type"
+                            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: rgba(255,255,255,0.1); color: var(--text-primary);">
+                            <option value="law">📜 نص قانوني (Law)</option>
+                            <option value="jurisprudence">⚖️ اجتهاد قضائي (Jurisprudence)</option>
+                            <option value="legal_opinion">📝 استشارة/رأي قانوني</option>
+                            <option value="template">📋 نموذج وثيقة</option>
+                            <option value="other">📂 غير ذلك</option>
+                        </select>
+                    </div>
+
+                    <div class="drop-zone" id="drop-zone">
+                        <i class="fa-solid fa-file-import"></i>
+                        <h3>اسحب الملفات وأفلتها هنا</h3>
+                        <p>أو انقر للاختيار</p>
+                        <input type="file" id="file-input" hidden multiple accept=".txt,.docx,.xlsx,.pdf">
+                        <span class="file-info">الصيغ المدعومة: .txt, .docx, .xlsx</span>
+                    </div>
+
+                    <div class="upload-status" id="upload-status" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <span id="status-text">جاري المعالجة...</span>
+                    </div>
+                </div>
+
+                <div class="recent-uploads">
+                    <h3>الوثائق المرفوعة</h3>
+                    <div id="documents-list" class="documents-grid">
+                        <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم البحث القانوني -->
+            <section id="search-section" class="module-section">
+                <header class="section-header">
+                    <h2><i class="fa-solid fa-magnifying-glass"></i> البحث القانوني الذكي</h2>
+                    <p>اطرح سؤالك القانوني وسيبحث النظام في القوانين والاجتهادات</p>
+                </header>
+
+                <div class="search-interface">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="ما هي عقوبة جريمة السرقة بالعنف؟">
+                        <button id="search-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+
+                    <div class="quick-questions">
+                        <span>أسئلة سريعة:</span>
+                        <button class="quick-btn" data-query="ما هي شروط الدفاع الشرعي؟">الدفاع الشرعي</button>
+                        <button class="quick-btn" data-query="ما هي مدة التقادم في الجنايات؟">التقادم</button>
+                        <button class="quick-btn" data-query="ما هي أركان جريمة السرقة؟">أركان السرقة</button>
+                    </div>
+
+                    <div id="search-results" class="results-container">
+                        <div class="placeholder-state">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                            <p>اطرح سؤالك القانوني للحصول على إجابة مدعومة بالمصادر</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم القضايا -->
+            <section id="cases-section" class="module-section">
+                <header class="section-header">
+                    <h2><i class="fa-solid fa-folder-open"></i> إدارة القضايا</h2>
+                    <p>أضف وأدر ملفات القضايا الخاصة بموكليك</p>
+                </header>
+
+                <div class="cases-container">
+                    <div class="cases-actions">
+                        <button id="new-case-btn" class="action-btn primary">
+                            <i class="fa-solid fa-plus"></i> قضية جديدة
+                        </button>
+                        <button id="load-cases-btn" class="action-btn">
+                            <i class="fa-solid fa-sync"></i> تحديث القائمة
+                        </button>
+                    </div>
+
+                    <div id="cases-list" class="cases-grid">
+                        <div class="placeholder-state">
+                            <i class="fa-solid fa-folder-plus"></i>
+                            <p>لا توجد قضايا. أضف قضية جديدة للبدء.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- نموذج إضافة قضية -->
+                <div id="case-form-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>إضافة قضية جديدة</h3>
+                            <button class="close-modal">&times;</button>
+                        </div>
+                        <form id="case-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>رقم القضية</label>
+                                    <input type="text" name="case_number" placeholder="مثال: 124/2024" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>نوع القضية</label>
+                                    <select name="case_type">
+                                        <option value="جنائي">جنائي</option>
+                                        <option value="مدني">مدني</option>
+                                        <option value="تجاري">تجاري</option>
+                                        <option value="أسري">أسري</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>المحكمة</label>
+                                    <input type="text" name="court" placeholder="مثال: محكمة الجنايات">
+                                </div>
+                                <div class="form-group">
+                                    <label>المجلس القضائي</label>
+                                    <input type="text" name="council" placeholder="مثال: مجلس قضاء الجزائر">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>اسم المتهم</label>
+                                <input type="text" name="defendant_name" placeholder="الاسم الكامل">
+                            </div>
+                            <div class="form-group">
+                                <label>التهم</label>
+                                <input type="text" name="charges" placeholder="التهم مفصولة بفاصلة">
+                            </div>
+                            <div class="form-group">
+                                <label>وقائع القضية</label>
+                                <textarea name="facts" rows="4" placeholder="اكتب ملخص الوقائع..."></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-cancel">إلغاء</button>
+                                <button type="submit" class="btn-submit">حفظ القضية</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم توليد المرافعات -->
+            <section id="pleading-section" class="module-section">
+                <header class="section-header">
+                    <h2><i class="fa-solid fa-file-signature"></i> توليد المرافعات</h2>
+                    <p>اختر نوع المرافعة وملف القضية لتوليد مرافعة احترافية</p>
+                </header>
+
+                <div class="pleading-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اختر قضية محفوظة</label>
+                            <select id="pleading-case-select">
+                                <option value="">-- اختر قضية أو اكتب يدوياً --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>الوقائع والتفاصيل</label>
+                            <textarea id="pleading-facts" rows="5"
+                                placeholder="اكتب الوقائع والتهم والتفاصيل..."></textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم المتهم</label>
+                            <input type="text" id="pleading-defendant" placeholder="الاسم الكامل للمتهم">
+                        </div>
+                        <div class="form-group">
+                            <label>المحكمة</label>
+                            <input type="text" id="pleading-court" placeholder="مثال: محكمة الجنايات">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>رقم القضية</label>
+                            <input type="text" id="pleading-case-number" placeholder="مثال: 124/2024">
+                        </div>
+                        <div class="form-group">
+                            <label>التهمة</label>
+                            <input type="text" id="pleading-charge" placeholder="مثال: الضرب والجرح العمدي">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>نوع المرافعة</label>
+                            <select id="pleading-type">
+                                <option value="دفاع">مذكرة دفاع</option>
+                                <option value="استئناف">عريضة استئناف</option>
+                                <option value="نقض">طعن بالنقض</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>أسلوب المرافعة</label>
+                            <select id="pleading-style">
+                                <option value="متوازن">متوازن</option>
+                                <option value="قوي">قوي وحازم</option>
+                                <option value="تصالحي">تصالحي</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="generate-pleading-btn" class="action-btn primary">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> توليد المرافعة
+                    </button>
+                </div>
+
+                <div id="pleading-results" class="report-container">
+                    <!-- المرافعة ستظهر هنا -->
+                </div>
+            </section>
+
+            <!-- قسم الاجتهادات القضائية -->
+            <section id="jurisprudence-section" class="module-section">
+                <header class="section-header">
+                    <h2><i class="fa-solid fa-gavel"></i> البحث في الاجتهادات القضائية</h2>
+                    <p>ابحث في قرارات المحكمة العليا والمبادئ القانونية المستقرة</p>
+                </header>
+
+                <div class="jurisprudence-form">
+                    <div class="form-group">
+                        <label>المسألة القانونية</label>
+                        <input type="text" id="legal-issue" placeholder="مثال: شروط بطلان الاعتراف">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>الغرفة (اختياري)</label>
+                            <select id="chamber-filter">
+                                <option value="">جميع الغرف</option>
+                                <option value="الغرفة الجنائية">الغرفة الجنائية</option>
+                                <option value="الغرفة المدنية">الغرفة المدنية</option>
+                                <option value="الغرفة التجارية">الغرفة التجارية</option>
+                                <option value="الغرفة الاجتماعية">الغرفة الاجتماعية</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="search-jurisprudence-btn" class="action-btn primary">
+                        <i class="fa-solid fa-search"></i> بحث في الاجتهادات
+                    </button>
+                </div>
+
+                <div id="jurisprudence-results" class="report-container">
+                    <!-- نتائج البحث ستظهر هنا -->
+                </div>
+            </section>
+
+            <!-- قسم المستشار القانوني -->
+            <section id="consultant-section" class="module-section">
+                <header class="section-header">
+                    <h2><i class="fa-solid fa-user-tie"></i> المستشار القانوني الذكي</h2>
+                    <p>احصل على توجيه قانوني عام مبسّط لوضعك - هذه الخدمة لا تُغني عن استشارة محامٍ</p>
+                </header>
+
+                <div class="consultant-form">
+                    <div class="form-group">
+                        <label>صِف وضعك أو مشكلتك القانونية بالتفصيل:</label>
+                        <textarea id="situation-input" rows="6" placeholder="مثال: تعرضت لحادث سير ولم يدفع لي التأمين التعويض رغم مرور 3 أشهر. ما هي حقوقي وما الإجراءات التي يمكنني اتخاذها؟
+
+اذكر:
+- تفاصيل الوضع بدقة
+- التواريخ المهمة إن وُجدت
+- أي إجراءات اتخذتها سابقاً"></textarea>
+                    </div>
+
+                    <div class="disclaimer-box">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>هذا النظام يقدم توجيهاً عاماً فقط ولا يُعتبر استشارة قانونية رسمية</span>
+                    </div>
+
+                    <button id="get-consultation-btn" class="action-btn primary">
+                        <i class="fa-solid fa-comments"></i> احصل على التوجيه القانوني
+                    </button>
+                </div>
+
+                <div id="consultation-results" class="report-container">
+                    <!-- الاستشارة ستظهر هنا -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

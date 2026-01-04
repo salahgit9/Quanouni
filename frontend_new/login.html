@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - Qanouni-AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 450px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header i {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            text-align: center;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            text-align: center;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .role-option {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .role-option:hover {
+            border-color: #667eea;
+        }
+
+        .role-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .role-option input {
+            display: none;
+        }
+
+        .role-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .role-desc {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <i class="fa-solid fa-scale-balanced"></i>
+            <h1>Qanouni-AI</h1>
+            <p>المساعد القانوني الذكي</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">
+                <i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول
+            </div>
+            <div class="tab" onclick="switchTab('register')">
+                <i class="fa-solid fa-user-plus"></i> حساب جديد
+            </div>
+        </div>
+
+        <div class="form-container">
+            <!-- Login Form -->
+            <div id="login-form" class="tab-content active">
+                <div id="login-error" class="error-message"></div>
+
+                <div class="form-group">
+                    <label>اسم المستخدم</label>
+                    <div class="input-group">
+                        <input type="text" id="login-username" placeholder="أدخل اسم المستخدم">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <div class="input-group">
+                        <input type="password" id="login-password" placeholder="أدخل كلمة المرور">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="handleLogin()">
+                    <i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول
+                </button>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="tab-content">
+                <div id="register-error" class="error-message"></div>
+                <div id="register-success" class="success-message"></div>
+
+                <div class="form-group">
+                    <label>اسم المستخدم</label>
+                    <div class="input-group">
+                        <input type="text" id="register-username" placeholder="اختر اسم مستخدم">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <div class="input-group">
+                        <input type="text" id="register-fullname" placeholder="أدخل اسمك الكامل">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>البريد الإلكتروني (اختياري)</label>
+                    <div class="input-group">
+                        <input type="email" id="register-email" placeholder="example@email.com">
+                        <i class="fa-solid fa-envelope"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <div class="input-group">
+                        <input type="password" id="register-password" placeholder="اختر كلمة مرور قوية">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>نوع الحساب</label>
+                    <div class="role-selector">
+                        <div class="role-option selected" onclick="selectRole('normal')">
+                            <input type="radio" name="role" value="normal" checked>
+                            <div class="role-title">مستخدم عادي</div>
+                            <div class="role-desc">بحث + استشارة</div>
+                        </div>
+                        <div class="role-option" onclick="selectRole('premium')">
+                            <input type="radio" name="role" value="premium">
+                            <div class="role-title">مستخدم مميز</div>
+                            <div class="role-desc">جميع الميزات</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="handleRegister()">
+                    <i class="fa-solid fa-user-plus"></i> إنشاء حساب
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+
+        function switchTab(tab) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+
+            if (tab === 'login') {
+                tabs[0].classList.add('active');
+                document.getElementById('login-form').classList.add('active');
+            } else {
+                tabs[1].classList.add('active');
+                document.getElementById('register-form').classList.add('active');
+            }
+        }
+
+        function selectRole(role) {
+            document.querySelectorAll('.role-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            document.querySelector(`input[value="${role}"]`).checked = true;
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const errorDiv = document.getElementById('login-error');
+
+            if (!username || !password) {
+                errorDiv.textContent = 'الرجاء إدخال اسم المستخدم وكلمة المرور';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.href = 'index.html';
+                } else {
+                    errorDiv.textContent = data.detail || 'فشل تسجيل الدخول';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'خطأ في الاتصال بالخادم';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function handleRegister() {
+            const username = document.getElementById('register-username').value;
+            const full_name = document.getElementById('register-fullname').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const errorDiv = document.getElementById('register-error');
+            const successDiv = document.getElementById('register-success');
+
+            if (!username || !password) {
+                errorDiv.textContent = 'الرجاء إدخال اسم المستخدم وكلمة المرور على الأقل';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+             try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, full_name, email, role })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    successDiv.textContent = 'تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول';
+                    successDiv.style.display = 'block';
+
+                    // Clear form
+                    document.getElementById('register-username').value = '';
+                    document.getElementById('register-fullname').value = '';
+                    document.getElementById('register-email').value = '';
+                    document.getElementById('register-password').value = '';
+
+                    // Switch to login after 2 seconds
+                    setTimeout(() => switchTab('login'), 2000);
+                } else {
+                    errorDiv.textContent = data.detail || 'فشل التسجيل';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'خطأ في الاتصال بالخادم';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Enter key support
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('login-password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleLogin();
+            });
+            document.getElementById('register-password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleRegister();
+            });
+        });
+    </script>
+</body>
+</html>
