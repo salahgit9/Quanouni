@@ -553,9 +553,12 @@ async function loadCasesForPleading() {
         const caseSelect = document.getElementById('pleading-case-select');
 
         if (caseSelect && data.cases) {
+            // Clear existing options except the first one
+            caseSelect.innerHTML = '<option value="">-- اختر قضية أو اكتب يدوياً --</option>';
+
             data.cases.forEach(c => {
                 const option = document.createElement('option');
-                option.value = c.case_id;
+                option.value = c.id;  // Fixed: was c.case_id
                 option.textContent = `${c.case_number} - ${c.case_type}`;
                 caseSelect.appendChild(option);
             });
