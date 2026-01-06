@@ -1,4 +1,5 @@
 import requests
+import re
 from rank_bm25 import BM25Okapi
 from typing import List, Tuple
 from app.core.config import settings
@@ -72,12 +73,27 @@ class BM25Service:
                 self.corpus.append(content)
                 self.metadatas.append(metadata)
         
-        # Build BM25 index
+        # Build BM25 index with Arabic-aware tokenization
         if self.corpus:
-            tokenized_corpus = [doc.split(" ") for doc in self.corpus]
+            tokenized_corpus = [self._arabic_tokenize(doc) for doc in self.corpus]
             self.bm25 = BM25Okapi(tokenized_corpus)
             self._loaded = True
-            print(f"BM25 index built with {len(self.corpus)} documents")
+            print(f"BM25 index built with {len(self.corpus)} documents (Arabic tokenizer enabled)")
+
+    def _arabic_tokenize(self, text: str) -> List[str]:
+        """Arabic-aware tokenizer with diacritics removal and letter normalization."""
+        if not text:
+            return []
+        # 1. Remove diacritics (tashkeel)
+        text = re.sub(r'[\u064B-\u065F\u0670]', '', text)
+        # 2. Normalize Alef variants (أ إ آ ا -> ا)
+        text = re.sub(r'[أإآ]', 'ا', text)
+        # 3. Normalize Ya and Taa Marbuta (ى -> ي, ة -> ه)
+        text = text.replace('ى', 'ي').replace('ة', 'ه')
+        # 4. Split on whitespace and punctuation (Arabic + Latin)
+        tokens = re.split(r'[\s،.؛:؟!\-\(\)\[\]«»"\'/\\]+', text)
+        # 5. Remove empty and very short tokens
+        return [t.strip() for t in tokens if len(t.strip()) > 1]
 
     def search(self, query: str, top_k: int = 5, filters: dict = None) -> List[Tuple[str, float, dict]]:
         """Search the corpus using BM25."""
@@ -88,7 +104,7 @@ class BM25Service:
         if not self.bm25:
             return []
 
-        tokenized_query = query.split(" ")
+        tokenized_query = self._arabic_tokenize(query)
         scores = self.bm25.get_scores(tokenized_query)
         
         results = []

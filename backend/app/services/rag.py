@@ -27,27 +27,34 @@ def generate_with_retry(model, prompt, retries=5, delay=4):
                 "Authorization": f"Bearer {settings.GROQ_API_KEY}",
                 "Content-Type": "application/json"
             }
-            model_id = getattr(settings, 'GROQ_MODEL', "llama-3.3-70b-versatile")
+            # Fallback to stable model if the configured one fails
+            model_id = getattr(settings, 'GROQ_MODEL', None) or "llama-3.1-70b-versatile"
+            print(f"[Groq] Using model: {model_id}")
             data = {
                 "messages": [{"role": "user", "content": prompt}],
                 "model": model_id,
-                "temperature": 0.3
+                "temperature": 0.3,
+                "max_tokens": 4096
             }
             
             # Simple retry logic for Groq too
             for attempt in range(3):
                 try:
-                    resp = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=data, timeout=30)
+                    resp = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=data, timeout=120)
                     if resp.status_code == 200:
                         content = resp.json()['choices'][0]['message']['content']
                         return GenerationResponse(text=content)
                     elif resp.status_code == 429:
+                        print(f"Groq Rate Limit, waiting {delay}s...")
                         time.sleep(delay)
                         continue
                     else:
-                        print(f"Groq Error {resp.status_code}: {resp.text}")
+                        print(f"Groq Error {resp.status_code}: {resp.text[:500]}")
+                except requests.exceptions.Timeout:
+                    print(f"Groq Timeout (attempt {attempt+1}/3)")
+                    continue
                 except Exception as e:
-                    print(f"Groq Exception: {e}")
+                    print(f"Groq Exception: {type(e).__name__}: {e}")
             
             print("Groq failed, falling back to Gemini...")
         except Exception as e:
@@ -133,7 +140,11 @@ Chunks: {chunks_text}
 class RAGService:
     def __init__(self):
         configure_gemini()
-        self.model = genai.GenerativeModel(settings.GEMINI_CHAT_MODEL)
+        # Fix model name: ensure we use a valid model ID
+        model_name = settings.GEMINI_CHAT_MODEL or "gemini-1.5-flash"
+        # validation: remove models/ prefix if present to be safe, or just use as is. 
+        # Actually newer SDKs prefer no prefix for some endpoints.
+        self.model = genai.GenerativeModel(model_name)
 
     def _retrieve(self, query, filters=None, top_k=20):
         # 1. Vector Search
@@ -155,13 +166,13 @@ class RAGService:
         scores = {}
         meta_map = {}
         
-        # Combine
+        # Combine (balanced weights for semantic + keyword search)
         for r, d in enumerate(v_docs):
-            scores[d] = scores.get(d, 0) + (0.3 / (k + r + 1))
+            scores[d] = scores.get(d, 0) + (0.5 / (k + r + 1))  # Vector: 50%
             if r < len(v_metas): meta_map[d] = v_metas[r]
             
         for r, (d, s, m) in enumerate(bm25_results):
-            scores[d] = scores.get(d, 0) + (0.7 / (k + r + 1))
+            scores[d] = scores.get(d, 0) + (0.5 / (k + r + 1))  # BM25: 50%
             meta_map[d] = m
 
         ranked_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)
@@ -198,15 +209,31 @@ class RAGService:
         if skip_generation:
             return {"answer": "Retrieval Only", "context": final_docs, "metadatas": final_metas}
 
-        # Prompt
-        prompt = f"""أنت باحث قانوني أكاديمي. المرجعية: القانون الجزائري.
-تعليمات:
-1. أجب بدقة مع الاستشهاد بالمصادر.
-2. التنسيق: فقرات واضحة، اقتباس المادة "نص المادة" [رقم المصدر].
-3. أضف قائمة المراجع في النهاية.
+        # Prompt - Professional Legal Research (v2.0)
+        prompt = f"""أنت **باحث قانوني متخصص في القانون الجزائري**، تعمل في مكتبة قانونية أكاديمية.
+مرجعيتك الحصرية هي النصوص القانونية المقدمة أدناه فقط.
 
-السؤال: {query}
-المصادر: {context}"""
+## مهمتك
+تحليل السؤال القانوني وتقديم إجابة دقيقة ومبررة بالنصوص.
+
+## قواعد الإجابة الإلزامية:
+1. **لا تختلق معلومات**: إذا لم تجد الإجابة في النصوص المقدمة، قل ذلك صراحة: "لم أجد نصاً صريحاً يجيب على هذا السؤال في المصادر المتاحة."
+2. **الاقتباس الدقيق**: عند الاستشهاد بمادة قانونية، اقتبس نصها الحرفي بين علامات تنصيص « ».
+3. **الإشارة للمصادر**: استخدم أرقام المصادر [1], [2], [3] بعد كل اقتباس أو معلومة.
+4. **التنسيق الإلزامي**:
+   - ابدأ بـ **## ملخص الإجابة** (3 أسطر كحد أقصى)
+   - ثم **## التحليل القانوني** مع شرح مفصل وأرقام المصادر
+   - اختم بـ **## المراجع** (قائمة مرقمة: اسم القانون + رقم المادة إن وجد)
+5. **اللغة**: العربية الفصحى القانونية الرسمية. لا تستخدم العامية أبداً.
+6. **الموضوعية**: لا تُبدِ رأياً شخصياً. التزم بما جاء في النصوص.
+
+## النصوص القانونية المتاحة:
+{context}
+
+## السؤال:
+{query}
+
+## الإجابة:"""
 
         try:
             response = generate_with_retry(self.model, prompt)
@@ -217,34 +244,107 @@ class RAGService:
         
         return {"query": query, "answer": answer, "sources": [{"filename": m.get('filename'), "chunk_index": i+1} for i, m in enumerate(final_metas)]}
 
+    def _extract_search_query(self, situation: str) -> str:
+        """استخراج ذكي للكلمات المفتاحية باستخدام LLM لتحسين دقة البحث"""
+        try:
+            prompt = f"""أنت خبير قانوني ذكي. مهمتك هي تحليل موقف قانوني واستخراج أفضل كلمات البحث للعثور على القوانين والمراجع المناسبة.
+            
+الموقف:
+{situation[:2000]}
+
+استخرج ما يلي في سطر واحد فقط:
+1. نوع القضية (مثلاً: ميراث، عمل، جنائي، أحوال شخصية)
+2. 5 إلى 10 كلمات مفتاحية دقيقة للبحث في النصوص القانونية (مثلاً: استخدم "تسريح تعسفي" بدلاً من "طرد"، "قسمة تركة" بدلاً من "تقسيم الإرث")
+
+تنسيق الإجابة المطلوب:
+[نوع القضية] كلمات مفتاحية
+
+أجب فقط بالسطر المطلوب بدون أي مقدمات أو شرح."""
+
+            # استخدام الموديل لاستخراج الكلمات المفتاحية
+            # نستخدم نفس دالة التوليد الموثوقة لدينا
+            response = generate_with_retry(self.model, prompt)
+            
+            if response and hasattr(response, 'text'):
+                extracted_text = response.text.strip()
+                print(f"[Smart Extract] LLM Output: {extracted_text}")
+                
+                # دمج وصف الموقف (أول 50 كلمة للسياق) مع الكلمات المستخرجة ذكياً
+                # هذا يضمن وجود السياق الأصلي + المصطلحات القانونية الدقيقة
+                words = situation.split()[:50]
+                combined_query = " ".join(words) + " " + extracted_text
+                return combined_query
+            
+            print("[Smart Extract] Empty response, falling back.")
+            return " ".join(situation.split()[:80])
+
+        except Exception as e:
+            print(f"[Smart Extract] Error: {e}")
+            # Fallback to simple truncation
+            return " ".join(situation.split()[:80])
+
     def consult(self, situation: str):
-        # Expert Lawyer Mode
-        # Search for relevant laws (Civil, Penal, Labor depending on keywords)
-        docs, metas = self._retrieve(situation, top_k=30)
+        """وضع المستشار القانوني - استشارة قانونية احترافية"""
+        # استخراج استعلام بحث مركز من الموقف
+        search_query = self._extract_search_query(situation)
         
-        # Rerank carefully
-        reranked = rerank_with_gemini(situation, docs, top_k=7)
+        # Search for relevant laws AND jurisprudence using focused query
+        docs, metas = self._retrieve(search_query, top_k=20)
+        
+        # Rerank using original situation for context relevance
+        reranked = rerank_with_gemini(situation, docs, top_k=5)
         final_docs = [r[0] for r in reranked]
         final_metas = []
-        doc_map = {d: m for d, m in zip(docs, metas)} # Optimization
+        doc_map = {d: m for d, m in zip(docs, metas)}
         for d in final_docs: final_metas.append(doc_map.get(d, {}))
         
-        context = "\n".join([f"Source {i+1}: {d}" for i, d in enumerate(final_docs)])
+        # Format context with source type indication (full text like Legal Search)
+        context = ""
+        for i, (doc, meta) in enumerate(zip(final_docs, final_metas), 1):
+            source_name = meta.get('filename', f'مصدر {i}').replace('.txt', '')
+            source_type = "اجتهاد قضائي" if "قرار" in source_name or "اجتهاد" in source_name else "نص قانوني"
+            context += f"\n\n### [{source_type} - مصدر {i}: {source_name}]\n{doc}\n"
         
-        prompt = f"""بصفتك محامياً خبيراً في القانون الجزائري، قم بتحليل الوضع التالي وتقديم استشارة قانونية رصينة.
+        # Professional Legal Consultant Prompt (v2.0)
+        prompt = f"""أنت **محامٍ أول معتمد لدى المحكمة العليا الجزائرية** بخبرة 20 سنة في الترافع والاستشارات.
+تقدم استشارات قانونية دقيقة ومهنية للموكلين، مستنداً إلى النصوص القانونية واجتهادات المحكمة العليا.
 
-الوضع:
+## الموقف القانوني المعروض:
 {situation}
 
-المصادر القانونية المتاحة (استخدم ما ينطبق فقط):
+## المصادر القانونية المتاحة:
+(تشمل نصوص القوانين + اجتهادات المحكمة العليا)
 {context}
 
-المطلوب (هيكلة الرد):
-1. **التحليل القانوني للوقائع**: كيف يكيف القانون هذه الوقائع؟ (تكييف قانوني).
-2. **الأسانيد القانونية**: اذكر المواد القانونية التي تنطبق بدقة (مع نصها إن وجد).
-3. **التوجيه والاستشارة**: ماذا يجب على العميل أن يفعل؟ (خطوات عملية: شكوى، دعوى، إنذار...).
+---
 
-الأسلوب: خاطب العميل بمهنية، كن مباشراً، واستخدم المصطلحات القانونية الجزائرية الصحيحة."""
+## هيكلة الاستشارة (التزم بهذا الترتيب):
+
+### 1. التكييف القانوني ⚖️
+- ما هو نوع القضية؟ (مدني / جزائي / إداري / أسرة / عمل / تجاري)
+- ما هي الوقائع القانونية المؤثرة؟
+- من هم الأطراف وما صفاتهم القانونية؟
+
+### 2. الأساس القانوني 📚
+- **النصوص القانونية**: اذكر المواد المنطبقة مع نصها بين « » [رقم المصدر]
+- **الاجتهاد القضائي**: إن وجد قرار من المحكمة العليا يدعم الموقف، اذكره
+
+### 3. التوجيه العملي 🎯
+- ما الإجراء الواجب؟ (شكوى / دعوى / صلح / تظلم / استئناف)
+- أمام أي جهة؟ (محكمة ابتدائية / مجلس قضائي / محكمة عليا / إدارة)
+- ما الوثائق والأدلة اللازمة؟
+
+### 4. التحذيرات القانونية ⚠️
+- آجال التقادم أو السقوط (إن وجدت)
+- المخاطر المحتملة إن لم يُتخذ إجراء سريع
+- نقاط ضعف الموقف القانوني (إن وجدت)
+
+### 5. الخلاصة والتوصية 📌
+- ملخص الموقف في 3 أسطر كحد أقصى
+- التوصية النهائية الواضحة
+
+---
+⚠️ **تنويه**: هذه استشارة قانونية أولية مبنية على المعلومات المقدمة. يُنصح بمراجعة محامٍ متخصص لدراسة ملف القضية كاملاً."""
 
         try:
             response = generate_with_retry(self.model, prompt)
@@ -260,7 +360,7 @@ class RAGService:
 
     def draft_pleading(self, case_data: dict, pleading_type="دفاع", style="formel", top_k=30):
         """
-        وضع المحامي: توليد مذكرات قانونية احترافية
+        وضع المحامي: توليد مذكرات قانونية احترافية باستخدام هيكلية المرافعات الذهبية
         Advocate Mode: Generate professional legal pleadings
         """
         facts = case_data.get('facts', '')
@@ -269,80 +369,79 @@ class RAGService:
         court = case_data.get('court', 'المحكمة المختصة')
         case_number = case_data.get('case_number', '')
         
-        # Construct search query
-        query = f"{pleading_type} {facts} {charges}"
+        # 1. Smart Extraction from Case Data
+        # Combine facts and charges for context extraction
+        case_context = f"التهمة: {charges}. الوقائع: {facts}"
+        search_query = self._extract_search_query(case_context)
+        print(f"[Pleading] Smart Query: {search_query}")
+
+        # 2. Retrieval
+        docs, metas = self._retrieve(search_query, top_k=top_k)
         
-        docs, metas = self._retrieve(query, top_k=top_k)
+        # 3. Reranking using Gemini
+        # Select best 5 sources relevant to the case facts
+        reranked = rerank_with_gemini(case_context, docs, top_k=5)
+        final_docs = [r[0] for r in reranked]
+        final_metas = []
         
-        # Build legal context
-        context = "\n\n".join([
-            f"【النص القانوني {i+1}】\nالمصدر: {metas[i].get('filename', 'غير محدد')}\n{d[:800]}" 
-            for i, d in enumerate(docs[:8])
-        ])
+        # Match metadata back to reranked docs
+        doc_map = {d: m for d, m in zip(docs, metas)}
+        for d in final_docs: final_metas.append(doc_map.get(d, {}))
         
-        # Professional prompts by type
-        type_instructions = {
-            "دفاع": """اكتب **مذكرة دفاع** (Mémoire de Défense) متكاملة تتضمن:
-- **الدفوع الشكلية**: البطلان، عدم الاختصاص، سقوط الدعوى...
-- **الدفوع الموضوعية**: انتفاء الركن المادي/المعنوي، الإباحة، موانع المسؤولية...
-- **الظروف المخففة**: حسن السيرة، الاستفزاز، الحالة الاجتماعية...""",
-            
-            "استئناف": """اكتب **عريضة استئناف** (Requête d'Appel) تتضمن:
-- **أسباب الاستئناف**: مخالفة القانون، الخطأ في تطبيقه، القصور في التسبيب...
-- **الطلبات**: إلغاء الحكم المستأنف، التخفيف، البراءة...""",
-            
-            "نقض": """اكتب **طعن بالنقض** (Pourvoi en Cassation) يتضمن:
-- **أوجه الطعن**: مخالفة القانون، انعدام الأساس القانوني، التناقض في الأسباب...
-- **السوابق القضائية**: قرارات المحكمة العليا ذات الصلة..."""
-        }
-        
-        instruction = type_instructions.get(pleading_type, type_instructions["دفاع"])
-        
-        prompt = f"""أنت محامٍ خبير أمام المحاكم الجزائرية، متخصص في الترافع والدفاع الجنائي.
-مهمتك: كتابة {pleading_type} احترافية ومقنعة.
+        # 4. Build Legal Context (Full Text - No Truncation)
+        context = ""
+        for i, (doc, meta) in enumerate(zip(final_docs, final_metas), 1):
+            source_name = meta.get('filename', f'مصدر {i}').replace('.txt', '')
+            source_type = "اجتهاد قضائي" if "قرار" in source_name or "اجتهاد" in source_name else "نص قانوني"
+            context += f"\n\n### [{source_type} - مصدر {i}: {source_name}]\n{doc}\n"
+    
+        # 5. Professional "Golden Pleading" Prompt
+        prompt = f"""أنت محامٍ جزائري خبير "نابغ" (Top-Tier Lawyer) أمام المحكمة العليا.
+مهمتك: صياغة **{pleading_type}** احترافية جداً تحاكي "المرافعات الذهبية" من حيث البلاغة، الحجة الدامغة، والهيكلة الصارمة.
 
 ═══════════════════════════════════════
-📋 بيانات القضية
+📋 ملف القضية
 ═══════════════════════════════════════
-• رقم القضية: {case_number}
-• المحكمة: {court}
-• المتهم: {defendant_name}
+• الجهة القضائية: {court}
+• رقم الملف: {case_number}
+• الأطراف: المتهم {defendant_name} ضد النيابة العامة/الضحية
 • التهمة: {charges if charges else 'غير محددة'}
 
-📝 الوقائع:
+📝 وقائع القضية (كما وردت في الملف):
 {facts}
 
 ═══════════════════════════════════════
-📚 النصوص القانونية المتاحة
+📚 الذخيرة القانونية (السند)
 ═══════════════════════════════════════
+استخدم هذه النصوص بذكاء لتدعيم دفوعك (يجب ذكر رقم المادة واسم القانون بدقة). لا تذكر نصوصاً لم ترد هنا إلا إذا كنت متأكداً منها 100%:
 {context}
 
 ═══════════════════════════════════════
-✍️ المطلوب
+⚖️ الهيكلة الذهبية المطلوبة (إلزامية)
 ═══════════════════════════════════════
-{instruction}
+يجب أن تتبع مذكرتك الهيكل التالي بدقة:
 
-📌 الهيكل الإلزامي للمذكرة:
+1. **الديباجة الاحترافية**: (إلى السيد رئيس المحكمة... لفائدة المتهم... ضد...)
+2. **أولاً: موجز الوقائع**: (صياغة قانونية محايدة ومركزة للوقائع).
+3. **ثانياً: الإجراءات**: (ذكر الإجراءات المتخذة باختصار).
+4. **ثالثاً: المناقشة القانونية (قلب المرافعة)**:
+   أ- **في الشكل (الدفوع الشكلية)**: (تحقق من: بطلان الإجراءات، التقادم، الاختصاص - إن وجدت ثغرات).
+   ب- **في الموضوع (الدفوع الموضوعية)**:
+      - مناقشة أركان التهمة (المادي والمعنوي) وتفنيدها.
+      - تحليل أدلة الإثبات وكشف التناقضات.
+      - استثمار النصوص القانونية {context} لصالح الموكل.
+      - الاستشهاد بالاجتهاد القضائي (إن وجد في المصادر).
+5. **رابعاً: الطلبات الختامية**: (أصلياً: البراءة/الإلغاء، احتياطياً: التخفيف/إعادة التكييف).
 
-**بسم الله الرحمن الرحيم**
+═══════════════════════════════════════
+💡 توجيهات الأسلوب ("اللمسة الذهبية")
+═══════════════════════════════════════
+- استخدم لغة قانونية جزيلة ورصينة (مثال: "حيث أن الثابت..."، "ولما كان من المقرر...").
+- كن هجومياً في الحق، مفنداً لأدلة الخصم بالحجة والبرهان.
+- اربط النص القانوني بالواقعة مباشرة ("حيث أن المادة X تشترط... وحيث أن موكلي لم يقم بـ...").
+- التزم بأسلوب {style}.
 
-**إلى السيد/ة رئيس {court}**
-
-**مذكرة {pleading_type}**
-**في القضية رقم: {case_number}**
-
-**أولاً: الوقائع** (ملخص موجز ومركز)
-
-**ثانياً: المناقشة القانونية**
-أ) في الشكل: (الدفوع الشكلية إن وجدت)
-ب) في الموضوع: (التحليل القانوني مع الاستشهاد بالمواد)
-
-**ثالثاً: الطلبات**
-لهذه الأسباب، يلتمس الدفاع من عدالة المحكمة الموقرة...
-
----
-الأسلوب: {style} (رسمي/مقنع/مختصر)
-اللغة: العربية القانونية الفصيحة مع المصطلحات القانونية الجزائرية الصحيحة."""
+ابدأ صياغة المرافعة فوراً:"""
 
         try:
             response = generate_with_retry(self.model, prompt)
@@ -351,7 +450,7 @@ class RAGService:
             print(f"Pleading generation failed: {e}")
             pleading_text = f"""# مذكرة {pleading_type}
 
-⚠️ عذراً، لم أتمكن من إتمام صياغة المذكرة بسبب ضغط النظام.
+⚠️ عذراً، لم أتمكن من إتمام صياغة المذكرة بسبب خطأ تقني.
 
 ## المعلومات المتاحة:
 - **المتهم**: {defendant_name}
@@ -359,13 +458,16 @@ class RAGService:
 - **الوقائع**: {facts[:200]}...
 
 ## المصادر القانونية المستخرجة:
-يمكنك الاستعانة بالنصوص القانونية أدناه لصياغة مذكرتك يدوياً."""
+{context}
+
+يرجى إعادة المحاولة."""
 
         return {
             "pleading": pleading_text,
             "metadata": {"total_sources": len(docs), "pleading_type": pleading_type},
-            "sources": [{"filename": m.get('filename')} for m in metas[:5]]
+            "sources": [{"filename": m.get('filename')} for m in final_metas[:10]]
         }
+
 
     def search_jurisprudence(self, legal_issue: str, chamber=None, top_k=20):
         # Jurisprudence Mode

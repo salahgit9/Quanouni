@@ -1,9 +1,12 @@
-// التكوين
-const API_URL = '/api';
+// التكوين - Smart API URL
+// On localhost (dev), use port 8000. On cloud, use relative path.
+const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:8000/api'
+    : '/api';
 
-// حالة التطبيق
+// الحالة التطبيق
 const state = {
-    currentTab: 'upload',
+    currentTab: 'welcome',
     isUploading: false,
     isSearching: false,
     cases: [],
@@ -25,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupJurisprudence();
     setupConsultant();
     loadDocuments();
+
+    // Force UI update to match initial state (welcome)
+    switchTab(state.currentTab);
 });
 
 // --- المصادقة ---
@@ -71,26 +77,35 @@ function displayUserInfo(user) {
 }
 
 function applyPermissions(role) {
-    if (role === 'premium') {
-        // Premium يملك كل شيء
+    // 1. Admin Logic: Show everything
+    if (role === 'admin') {
         return;
     }
 
-    // Normal user - إخفاء الميزات المتقدمة
+    // 2. Hide Admin-Only Items for non-admins
+    const adminItems = document.querySelectorAll('[data-role="admin"]');
+    adminItems.forEach(item => {
+        item.style.display = 'none';
+    });
+
+    if (role === 'premium') {
+        // Premium has access to everything EXCEPT admin items (hidden above)
+        return;
+    }
+
+    // 3. Normal user - Hide Premium Features
     const premiumItems = document.querySelectorAll('[data-premium="true"]');
     premiumItems.forEach(item => {
         item.classList.add('restricted');
         item.style.opacity = '0.5';
         item.style.pointerEvents = 'none';
-
-        // إضافة رسالة tooltip
         item.title = 'هذه الميزة متاحة فقط للمستخدمين المميزين';
     });
 
-    // الانتقال للبحث إذا كان في تبويب premium
+    // Redirect if current tab is restricted
     const currentTab = state.currentTab;
     const currentTabEl = document.querySelector(`[data-tab="${currentTab}"]`);
-    if (currentTabEl && currentTabEl.dataset.premium === 'true') {
+    if (currentTabEl && (currentTabEl.dataset.premium === 'true' || currentTabEl.dataset.role === 'admin')) {
         switchTab('search');
     }
 }
@@ -327,7 +342,7 @@ async function loadDocuments() {
     }
 }
 
-// --- البحث القانوني ---
+// --- الباحث القانوني الذكي ---
 function setupSearch() {
     const searchBtn = document.getElementById('search-btn');
     const searchInput = document.getElementById('search-input');

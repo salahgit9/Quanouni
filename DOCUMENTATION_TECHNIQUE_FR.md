@@ -136,7 +136,7 @@ def generate_with_retry(model, prompt, retries=5, delay=4):
 
 ## 5. Endpoints API
 
-### 5.1 Recherche Juridique
+### 5.1 Chercheur Juridique Intelligent (Smart Researcher)
 ```
 POST /api/query
 Content-Type: application/json
@@ -234,12 +234,38 @@ AS $$
     FROM chunk
     ORDER BY embedding <=> query_embedding
     LIMIT match_count;
-$$ LANGUAGE sql;
-```
+### 4.2 Gestion des Accès (RBAC)
+Une gestion des rôles (Role-Based Access Control) a été implémentée pour sécuriser les fonctionnalités sensibles.
+
+- **Rôles :**
+    - `normal` / `premium` : Accès à la recherche et consultation.
+    - `admin` : Accès complet + **Upload de documents**.
+
+- **Création d'Admin :**
+    Un script backend sécurisé est disponible pour créer ou promouvoir un administrateur :
+    ```bash
+    python backend/create_admin.py <username> <password> [email]
+    ```
+    *Note : L'API publique `/register` ne permet pas de créer un rôle admin.*
 
 ---
 
-## 8. Déploiement
+## 5. Interface Utilisateur (Frontend)
+
+### 5.1 Design & Thème
+- **Thème :** "Deep Indigo" (Glassmorphism sombre).
+- **Visuel :** Gradient d'arrière-plan (`#0f172a` → `#1e1b4b`) pour une immersion professionnelle.
+- **Navigation :** Sidebar avec logo intégré, optimisée pour le flux de travail (Recherche → Consultation → Plaidoirie).
+
+### 5.2 Fonctionnalités
+- **Mode Sombre** par défaut.
+- **Menu Contextuel :** Les options "Upload" sont masquées pour les non-admins.
+- **Support RTL :** Interface entièrement adaptée à l'arabe.
+
+### 5.3 Page d'Accueil (Dashboard)
+- **Concept :** Une "Landing Page" interne qui accueille l'utilisateur avec un design premium.
+- **Contenu :** Grille de raccourcis compacte (une seule ligne) et centrée, avec slogan inspirant.
+- **Expérience :** Aucune sélection par défaut au démarrage, invitant l'utilisateur à choisir son module ("Smart Researcher", "Consultant", "Pleading").
 
 ### Local (Développement)
 ```bash

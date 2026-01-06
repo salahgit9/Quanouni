@@ -19,38 +19,35 @@
     <div class="app-container">
         <!-- الشريط الجانبي -->
         <nav class="sidebar">
-            <div class="logo-container">
-                <i class="fa-solid fa-scale-balanced logo-icon"></i>
-                <div class="logo-text">
-                    <h1>المساعد القانوني</h1>
-                    <span class="version">Qanouni-AI v1.0</span>
-                </div>
+            <div class="logo-container" style="text-align: center; padding: 20px 10px;">
+                <img src="logo.png" alt="Qanouni-AI Logo"
+                    style="width: 100%; height: auto; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
             </div>
 
             <ul class="nav-links">
-                <li class="nav-item active" data-tab="upload" data-premium="true">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span>رفع الوثائق</span>
-                </li>
-                <li class="nav-item" data-tab="search">
+                <li class="nav-item active" data-tab="search">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <span>البحث القانوني</span>
+                    <span>الباحث القانوني الذكي</span>
                 </li>
-                <li class="nav-item" data-tab="cases" data-premium="true">
-                    <i class="fa-solid fa-folder-open"></i>
-                    <span>القضايا</span>
-                </li>
-                <li class="nav-item" data-tab="pleading" data-premium="true">
-                    <i class="fa-solid fa-file-signature"></i>
-                    <span>توليد المرافعات</span>
+                <li class="nav-item" data-tab="consultant">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>المستشار القانوني</span>
                 </li>
                 <li class="nav-item" data-tab="jurisprudence" data-premium="true">
                     <i class="fa-solid fa-gavel"></i>
                     <span>الاجتهادات القضائية</span>
                 </li>
-                <li class="nav-item" data-tab="consultant">
-                    <i class="fa-solid fa-user-tie"></i>
-                    <span>المستشار القانوني</span>
+                <li class="nav-item" data-tab="pleading" data-premium="true">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>توليد المرافعات</span>
+                </li>
+                <li class="nav-item" data-tab="cases" data-premium="true">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>ملفات القضايا</span>
+                </li>
+                <li class="nav-item" data-tab="upload" data-role="admin">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>تحميل الملفات</span>
                 </li>
             </ul>
 
@@ -80,6 +77,40 @@
 
         <!-- المحتوى الرئيسي -->
         <main class="main-content">
+
+            <!-- قسم الترحيب (الرئيسية) -->
+            <section id="welcome-section" class="module-section active">
+                <div class="welcome-hero">
+                    <h1>مرحباً بك في <span class="brand-highlight">Qanouni-AI</span></h1>
+                    <p class="hero-subtitle">شريكك القانوني الذكي.. دقة، سرعة، واحترافية.</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card" onclick="switchTab('search')">
+                        <div class="icon-wrapper glass-blue"><i class="fa-solid fa-magnifying-glass"></i></div>
+                        <h3>الباحث القانوني</h3>
+                        <p>ابحث في آلاف النصوص القانونية بدقة عالية.</p>
+                    </div>
+
+                    <div class="feature-card" onclick="switchTab('consultant')">
+                        <div class="icon-wrapper glass-purple"><i class="fa-solid fa-user-tie"></i></div>
+                        <h3>المستشار الذكي</h3>
+                        <p>احصل على استشارات قانونية مفصلة ومدعمة بالمصادر.</p>
+                    </div>
+
+                    <div class="feature-card" onclick="switchTab('pleading')" data-premium="true">
+                        <div class="icon-wrapper glass-indigo"><i class="fa-solid fa-file-signature"></i></div>
+                        <h3>توليد المرافعات</h3>
+                        <p>أنشئ مسودات مرافعات احترافية في ثوانٍ.</p>
+                    </div>
+
+                    <div class="feature-card" onclick="switchTab('cases')" data-premium="true">
+                        <div class="icon-wrapper glass-teal"><i class="fa-solid fa-folder-open"></i></div>
+                        <h3>إدارة القضايا</h3>
+                        <p>نظم ملفات موكليك وتابع إجراءاتك بسهولة.</p>
+                    </div>
+                </div>
+            </section>
 
             <!-- قسم رفع الوثائق -->
             <section id="upload-section" class="module-section active">
@@ -126,10 +157,10 @@
                 </div>
             </section>
 
-            <!-- قسم البحث القانوني -->
+            <!-- قسم الباحث القانوني الذكي -->
             <section id="search-section" class="module-section">
                 <header class="section-header">
-                    <h2><i class="fa-solid fa-magnifying-glass"></i> البحث القانوني الذكي</h2>
+                    <h2><i class="fa-solid fa-magnifying-glass"></i> الباحث القانوني الذكي</h2>
                     <p>اطرح سؤالك القانوني وسيبحث النظام في القوانين والاجتهادات</p>
                 </header>
 

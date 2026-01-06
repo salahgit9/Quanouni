@@ -107,12 +107,15 @@ async def register(request: RegisterRequest):
     
     hashed_pw = get_password_hash(request.password)
     
+    # Security: Prevent admin creation via public API
+    safe_role = request.role if request.role in ['normal', 'premium'] else 'normal'
+
     user_data = {
         "username": request.username,
         "password_hash": hashed_pw,
         "full_name": request.full_name,
         "email": request.email,
-        "role": request.role
+        "role": safe_role
     }
     
     res = supabase.table("users").insert(user_data).execute()
