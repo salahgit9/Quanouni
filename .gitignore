@@ -1,4 +1,5 @@
 .env
+*.zip
 *.rar
 __pycache__/
 venv/

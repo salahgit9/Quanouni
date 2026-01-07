@@ -172,8 +172,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-font-weight: 500;
-}
+
 
 /* User Info Section */
 .user-info {
@@ -618,6 +617,7 @@ textarea:focus {
     margin-bottom: 1rem;
     background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -1px;
 }
@@ -625,6 +625,7 @@ textarea:focus {
 .brand-highlight {
     background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -637,28 +638,27 @@ textarea:focus {
 }
 
 .features-grid {
-    display: grid;
-    /* Reduced min-width to fit 4 cards */
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 1.5rem;
-    /* Increased max-width to allow spread */
     max-width: 1200px;
     margin: 0 auto;
-    justify-content: center;
 }
 
 .feature-card {
     background: rgba(30, 41, 59, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 16px;
-    /* Slightly smaller radius */
     padding: 1.5rem;
-    /* Reduced padding */
     text-align: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     position: relative;
     overflow: hidden;
+    /* Flex sizing for 3 cards per row */
+    flex: 0 1 calc(30% - 1rem);
+    min-width: 200px;
 }
 
 .feature-card:hover {

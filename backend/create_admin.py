@@ -22,9 +22,13 @@ async def create_admin(username, password, email=None, full_name="System Admin")
     try:
         res = supabase.table("users").select("*").eq("username", username).execute()
         if res.data:
-            print(f"⚠️ User '{username}' already exists. Upgrading to ADMIN...")
-            supabase.table("users").update({"role": "admin"}).eq("username", username).execute()
-            print(f"✅ User '{username}' is now an ADMIN!")
+            print(f"⚠️ User '{username}' already exists. Upgrading to ADMIN and resetting password...")
+            hashed_pwd = get_password_hash(password)
+            supabase.table("users").update({
+                "role": "admin",
+                "password_hash": hashed_pwd
+            }).eq("username", username).execute()
+            print(f"✅ User '{username}' upgraded to ADMIN with new password!")
             return
     except Exception as e:
         print(f"⚠️ Error checking/upgrading user: {e}")

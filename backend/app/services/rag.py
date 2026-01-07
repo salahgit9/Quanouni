@@ -63,7 +63,12 @@ def generate_with_retry(model, prompt, retries=5, delay=4):
     # Fallback to Gemini (Or Primary if Groq not set)
     for attempt in range(retries):
         try:
-            result = model.generate_content(prompt)
+            # Explicitly set max output tokens for long pleadings
+            generation_config = genai.types.GenerationConfig(
+                max_output_tokens=8192,
+                temperature=0.7
+            )
+            result = model.generate_content(prompt, generation_config=generation_config)
             return GenerationResponse(text=result.text)
         except exceptions.ResourceExhausted as e:
             if attempt < retries - 1:
@@ -141,7 +146,7 @@ class RAGService:
     def __init__(self):
         configure_gemini()
         # Fix model name: ensure we use a valid model ID
-        model_name = settings.GEMINI_CHAT_MODEL or "gemini-1.5-flash"
+        model_name = settings.GEMINI_CHAT_MODEL or "gemini-2.0-flash"
         # validation: remove models/ prefix if present to be safe, or just use as is. 
         # Actually newer SDKs prefer no prefix for some endpoints.
         self.model = genai.GenerativeModel(model_name)
@@ -470,11 +475,19 @@ class RAGService:
 
 
     def search_jurisprudence(self, legal_issue: str, chamber=None, top_k=20):
-        # Jurisprudence Mode
-        filters = {"category": "jurisprudence"} if chamber else None # Narrow down if we had chamber metadata
-        docs, metas = self._retrieve(legal_issue, filters=filters, top_k=top_k)
+        # Jurisprudence Mode - ALWAYS filter by category
+        filters = {"category": "jurisprudence"}
         
-        context = "\n".join([f"Arrêt {i+1}: {d}" for i, d in enumerate(docs[:7])])
+        # If chamber is specified, append it to query (since we lack metadata field for now)
+        search_query = legal_issue
+        if chamber:
+             search_query += f" ({chamber})"
+             
+        docs, metas = self._retrieve(search_query, filters=filters, top_k=top_k)
+        
+        # Limit context to avoid token limit (Groq max ~12K tokens)
+        truncated_docs = [d[:1200] for d in docs[:5]]  # 5 docs, 1200 chars each
+        context = "\n".join([f"Arrêt {i+1}: {d}" for i, d in enumerate(truncated_docs)])
         
         prompt = f"""بصفتك باحثاً في الاجتهاد القضائي (المحكمة العليا).
 المسألة: {legal_issue}
@@ -482,15 +495,31 @@ class RAGService:
 {context}
 
 المطلوب:
-حلل اتجاه المحكمة العليا في هذه المسألة.
-هل الاستقر متواتر أم متناقض؟
-استخرج المبدأ القانوني المكرس."""
+1. استخرج المبادئ القانونية بدقة.
+2. لكل مبدأ، **يجب** إدراج "نص المبدأ" كما ورد في القرار بين علامتي اقتباس.
+3. اذكر رقم القرار وتاريخه إن وجد في النص.
+4. وضح هل الاجتهاد مستقر أم هناك تناقض.
+
+التنسيق المطلوب:
+- **المبدأ:** [شرح المبدأ]
+- **النص المقتبس:** "...[النص]..."
+- **المرجع:** قرار رقم [X] بتاريخ [Y] (إن وجد)"""
 
         response = generate_with_retry(self.model, prompt)
+        
+        # Include text snippets in sources for UI
+        enriched_sources = []
+        for doc, meta in zip(docs[:5], metas[:5]):
+             enriched_sources.append({
+                 "filename": meta.get('filename'),
+                 "relevance_score": 0.9,
+                 "snippet": doc[:200] + "..." # Snippet for UI
+             })
+
         return {
             "analysis": response.text,
             "metadata": {"total_sources": len(docs)},
-            "sources": [{"filename": m.get('filename'), "relevance_score": 0.9} for m in metas[:5]]
+            "sources": enriched_sources
         }
 
 rag_service = RAGService()

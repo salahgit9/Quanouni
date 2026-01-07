@@ -11,7 +11,8 @@
 **Qanouni-AI** est une application **RAG (Retrieval-Augmented Generation)** spécialisée dans le droit algérien. Elle permet aux utilisateurs de :
 - Effectuer des **recherches juridiques** dans un corpus de textes de loi.
 - Obtenir des **consultations juridiques** personnalisées.
-- (Futur) Générer des **mémoires de plaidoirie** et analyser la **jurisprudence**.
+- Générer des **mémoires de plaidoirie** professionnels.
+- Analyser la **jurisprudence** de la Cour Suprême.
 
 ### Architecture Hybride (v1.2)
 L'application utilise une architecture **hybride multi-modèles** pour optimiser la vitesse et la qualité :
@@ -79,10 +80,12 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 GROQ_API_KEY=your_groq_api_key
 GROQ_MODEL=llama-3.3-70b-versatile
 
-# Gemini Models (pour compatibilité)
-VITE_GEMINI_CHAT_MODEL=models/gemini-1.5-flash
+# Gemini Models (Fallback si Groq échoue)
+VITE_GEMINI_CHAT_MODEL=gemini-2.0-flash
 VITE_GEMINI_EMBEDDING_MODEL=text-embedding-004
 ```
+
+> **⚠️ Note importante**: Le modèle `gemini-2.0-flash` est le fallback recommandé. Les anciens noms (`gemini-pro`, `gemini-1.5-flash-latest`) sont dépréciés.
 
 ---
 
@@ -185,6 +188,47 @@ POST /api/login response:
     "success": true,
     "token": "eyJhbGciOiJIUzI1Ni...",
     "user": { "username": "...", "role": "premium" }
+}
+
+### 5.6 Gestion des Utilisateurs (Admin)
+Pour créer un administrateur :
+```bash
+python backend/create_admin.py
+```
+**Identifiants par défaut :**
+- **User:** `admin`
+- **Pass:** `admin123`
+
+---
+### 5.4 Jurisprudence (Analyse de la Cour Suprême)
+```
+POST /api/legal/jurisprudence
+Content-Type: application/json
+
+{
+    "legal_issue": "ما هي شروط بطلان الاعتراف المنتزع بالإكراه؟",
+    "chamber": null,
+    "top_k": 5
+}
+
+Response:
+{
+    "analysis": "...",
+    "sources": [...]
+}
+```
+
+> **⚡ Limite de tokens**: Le contexte est limité à 5 décisions × 1200 caractères pour respecter la limite Groq (12K tokens).
+
+### 5.5 Plaidoirie (Génération de Mémoires)
+```
+POST /api/legal/pleading
+Content-Type: application/json
+
+{
+    "case_id": "uuid-of-saved-case",
+    "pleading_type": "مذكرة دفاع",
+    "style": "متوازن"
 }
 ```
 

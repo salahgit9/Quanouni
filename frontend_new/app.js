@@ -785,6 +785,7 @@ async function searchJurisprudence() {
                             <span><i class="fa-solid fa-book"></i> ${source.filename}</span>
                             ${source.relevance_score ? `<span>صلة: ${(source.relevance_score * 100).toFixed(0)}%</span>` : ''}
                         </div>
+                        ${source.snippet ? `<div class="source-snippet" style="font-size: 0.9em; color: var(--text-secondary); margin-top: 0.5rem; border-right: 2px solid var(--accent-color); padding-right: 0.5rem; background: rgba(0,0,0,0.1); padding: 5px;">"${source.snippet.replace(/[#*]/g, '').trim()}..."</div>` : ''}
                     </div>
                 `;
             });

@@ -20,7 +20,6 @@ def query_chroma(query_embedding: list[float], n_results: int = 20, where: dict 
     
     payload = {
         "query_embedding": query_embedding,
-        "match_threshold": 0.0, # 0.0 works fine with direct HTTP
         "match_count": n_results,
         "filter_category": category_filter
     }
