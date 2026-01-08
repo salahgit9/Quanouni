@@ -1,4 +1,4 @@
-# 📚 Documentation Technique - QANOUNI AI (v1.2)
+# 📚 Documentation Technique - QANOUNI AI (v1.3)
 
 > **Système de Conseil Juridique Intelligent basé sur l'IA Générative (RAG)**
 > 
@@ -56,6 +56,7 @@ QUANOUNI/new/
 ├── data/                       # Corpus de textes juridiques (315 fichiers .txt)
 ├── scripts/                    # Outils de maintenance
 │   ├── ingest_pilot.py         # Ingestion des documents
+│   ├── scrape_conseil.py       # 🕸️ Scraper Jurisprudence (Conseil d'État)
 │   └── clear_db.py             # Nettoyage de la base
 │
 ├── .env                        # ⚠️ Clés API (NE PAS COMMITER)
@@ -244,6 +245,15 @@ Content-Type: application/json
 - Gère les appels API (`fetch`).
 - Utilise `marked.js` pour le rendu Markdown.
 - Stockage local (`localStorage`) pour la session utilisateur.
+- **Gestionnaire UI** : Logique de basculement de la sidebar (Mobile vs Desktop).
+
+### 6.3 Responsivité (Mobile & Desktop)
+- **Approche Mobile-First** : Media queries pour adapter la mise en page (`< 768px`).
+- **Header Unifié** : Barre de navigation supérieure visible sur tous les écrans.
+- **Sidebar Adaptative** :
+    - *Desktop* : Mode pliant (Collapse) pour maximiser l'espace.
+    - *Mobile* : Mode superposition (Overlay) avec menu hamburger.
+- **Logo** : Centré et redimensionné (80px) pour une meilleure visibilité.
 
 ---
 
@@ -330,13 +340,22 @@ Le `Dockerfile` et `render.yaml` sont prêts. Le déploiement nécessite :
 
 ---
 
-## 9. Évolutions Futures (TODO)
+## 9. Algorithmes & Scripts
+
+### 9.1 Scraper Jurisprudence (`scripts/scrape_conseil.py`)
+Un robot d'indexation sophistiqué pour récupérer les décisions du Conseil d'État :
+- **Source** : Site officiel (`conseil-etat.dz`).
+- **Capacité** : Itère sur les 5 chambres + Pagination automatique.
+- **Résilience** : Gestion des erreurs SSL, encodage d'URL, et reprises après échec.
+- **Sortie** : PDFs stockés dans `data/jurisprudence` + Métadonnées `metadata.json`.
+
+---
+
+## 10. Évolutions Futures (TODO)
 
 | Priorité | Fonctionnalité | Description |
 |----------|----------------|-------------|
-| 🔴 Haute | Authentification Réelle | Remplacer le mock par Supabase Auth (JWT) |
-| 🟠 Moyenne | Mode Plaidoirie | Compléter `/api/legal/pleading` (génération de mémoires) |
-| 🟠 Moyenne | Mode Jurisprudence | Filtrer par `category='jurisprudence'` |
+| 🟢 Basse | Ingestion Jurisprudence | Indexer les PDFs du scraper dans Supabase |
 | 🟢 Basse | Streaming | Affichage progressif des réponses (SSE) |
 | 🟢 Basse | Historique | Sauvegarder les conversations en base |
 
@@ -350,4 +369,4 @@ Le `Dockerfile` et `render.yaml` sont prêts. Le déploiement nécessite :
 
 ---
 
-*Documentation générée le 04/01/2026 - Version 1.2 (Hybrid Groq Engine)*
+*Documentation générée le 08/01/2026 - Version 1.3 (Mobile UI & Scraping)*

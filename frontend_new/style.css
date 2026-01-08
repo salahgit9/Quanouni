@@ -1420,7 +1420,7 @@ input[type="text"] {
         flex-direction: column;
         height: auto;
         min-height: 100vh;
-        padding-top: 60px;
+        padding-top: 90px;
     }
 
     /* .mobile-header is already display: flex from above */
@@ -1435,8 +1435,11 @@ input[type="text"] {
         z-index: 1000;
         transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
-        background-color: var(--bg-dark);
-        /* Ensure solid bg */
+        background-color: rgba(15, 23, 42, 0.85);
+        /* Glassmorphism similar to desktop but readable as overlay */
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .sidebar.active {
@@ -1461,6 +1464,20 @@ input[type="text"] {
         min-height: 100vh;
         overflow-y: visible;
         /* Let body scroll */
+        overflow-x: hidden;
+        /* Prevent horizontal scroll */
+    }
+
+    .markdown-content {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    pre,
+    code {
+        white-space: pre-wrap;
+        /* Wrap code blocks */
+        word-break: break-all;
     }
 
     body {
