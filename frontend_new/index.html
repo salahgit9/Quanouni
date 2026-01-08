@@ -17,8 +17,20 @@
 
 <body>
     <div class="app-container">
+        <!-- Mobile Header (Visible only on mobile) -->
+        <header class="mobile-header">
+            <button id="mobile-menu-btn" class="mobile-menu-btn">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="mobile-logo-container">
+                <img src="logo.png" alt="Qanouni-AI" height="70">
+            </div>
+        </header>
+
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
         <!-- الشريط الجانبي -->
-        <nav class="sidebar">
+        <nav class="sidebar" id="sidebar">
             <div class="logo-container" style="text-align: center; padding: 20px 10px;">
                 <img src="logo.png" alt="Qanouni-AI Logo"
                     style="width: 100%; height: auto; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">

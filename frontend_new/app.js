@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupNavigation();
     setupTheme();
+    setupMobileMenu(); // Mobile Menu Logic
     setupUpload();
     setupSearch();
     setupCases();
@@ -32,6 +33,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Force UI update to match initial state (welcome)
     switchTab(state.currentTab);
 });
+
+// --- القائمة الجانبية (موبايل + سطح المكتب) ---
+function setupMobileMenu() {
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (mobileBtn && sidebar && overlay) {
+        mobileBtn.addEventListener('click', () => {
+            if (window.innerWidth > 768) {
+                // Desktop: Toggle Collapse
+                sidebar.classList.toggle('collapsed');
+            } else {
+                // Mobile: Toggle Active/Overlay
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+
+        // Close on nav item click (mobile only)
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+    }
+}
 
 // --- المصادقة ---
 

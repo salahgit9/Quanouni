@@ -100,12 +100,14 @@ body {
 /* --- Layout --- */
 .app-container {
     display: flex;
-    height: 100%;
+    height: 100vh;
     /* Ensure background covers everything */
     background: transparent;
+    padding-top: 90px;
+    /* Space for the fixed header */
+    transition: all 0.3s ease;
 }
 
-/* --- Sidebar --- */
 /* --- Sidebar --- */
 .sidebar {
     width: var(--sidebar-width);
@@ -120,6 +122,22 @@ body {
     padding: 2rem 1.5rem;
     /* Reduced horizontal padding */
     z-index: 10;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    /* Prevent text wrapping when collapsing */
+    overflow: hidden;
+}
+
+.sidebar.collapsed {
+    width: 0;
+    padding: 2rem 0;
+    opacity: 0;
+    border: none;
+}
+
+/* Hide Sidebar Logo on Desktop (It's in the Header now) */
+.sidebar .logo-container {
+    display: none;
 }
 
 .logo-container {
@@ -1324,5 +1342,167 @@ input[type="text"] {
 
     .markdown-content {
         color: black;
+    }
+}
+
+/* --- Mobile Responsiveness --- */
+.mobile-header {
+    display: flex;
+    /* Always visible */
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.2rem;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 50;
+    height: 90px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 5px;
+    z-index: 20;
+    /* Ensure button is above centered logo */
+    position: relative;
+}
+
+.mobile-logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 100%;
+    z-index: 1;
+    /* Below button */
+    pointer-events: none;
+    /* Prevent blocking clicks in empty areas */
+}
+
+.mobile-logo-container img {
+    pointer-events: auto;
+    /* Restore clicks on the logo itself if valid */
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 99;
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        padding-top: 60px;
+    }
+
+    /* .mobile-header is already display: flex from above */
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        right: -290px;
+        /* Start off-screen */
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+        background-color: var(--bg-dark);
+        /* Ensure solid bg */
+    }
+
+    .sidebar.active {
+        right: 0;
+    }
+
+    /* Hide default logo in sidebar since we have mobile header */
+    .sidebar .logo-container {
+        display: none;
+    }
+
+    /* Adjust sidebar padding since logo is gone */
+    .sidebar {
+        padding-top: 1rem;
+    }
+
+    .main-content {
+        padding: 6rem 1rem 2rem 1rem;
+        /* Top padding for header */
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+        overflow-y: visible;
+        /* Let body scroll */
+    }
+
+    body {
+        overflow: auto;
+        /* Allow scroll on mobile */
+    }
+
+    .welcome-hero h1 {
+        font-size: 2.2rem;
+    }
+
+    .features-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .feature-card {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Adjust form layouts */
+    .form-row {
+        grid-template-columns: 1fr;
+        /* Stack inputs */
+        display: grid;
+        gap: 0;
+    }
+
+    .documents-grid {
+        grid-template-columns: 1fr;
+        /* Single column docs */
+    }
+
+    .search-box {
+        flex-direction: column;
+    }
+
+    .search-box button {
+        width: 100%;
+        padding: 0.8rem;
     }
 }
