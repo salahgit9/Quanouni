@@ -1,4 +1,4 @@
-# 📚 Documentation Technique - QANOUNI AI (v1.3)
+# 📚 Documentation Technique - QANOUNI AI (v1.4)
 
 > **Système de Conseil Juridique Intelligent basé sur l'IA Générative (RAG)**
 > 
@@ -57,6 +57,7 @@ QUANOUNI/new/
 ├── scripts/                    # Outils de maintenance
 │   ├── ingest_pilot.py         # Ingestion des documents
 │   ├── scrape_conseil.py       # 🕸️ Scraper Jurisprudence (Conseil d'État)
+│   ├── ingest_conseil_etat.py  # 📥 Ingestion Jurisprudence (Conseil d'État)
 │   └── clear_db.py             # Nettoyage de la base
 │
 ├── .env                        # ⚠️ Clés API (NE PAS COMMITER)
@@ -233,6 +234,11 @@ Content-Type: application/json
 }
 ```
 
+> **✨ Amélioration v1.4** : Les modes "Consultant" et "Plaidoirie" intègrent désormais automatiquement :
+> *   Les textes de loi.
+> *   La jurisprudence de la Cour Suprême.
+> *   Les arrêts du Conseil d'État (`jurisprudence_conseil_etat`).
+
 ---
 
 ## 6. Frontend
@@ -349,13 +355,20 @@ Un robot d'indexation sophistiqué pour récupérer les décisions du Conseil d'
 - **Résilience** : Gestion des erreurs SSL, encodage d'URL, et reprises après échec.
 - **Sortie** : PDFs stockés dans `data/jurisprudence` + Métadonnées `metadata.json`.
 
+### 9.2 Ingestion Conseil d'État (`scripts/ingest_conseil_etat.py`)
+Script dédié à l'ingestion des 316 décisions du Conseil d'État :
+- **Stratégie** : 1 Fichier = 1 Chunk (pour préserver le contexte global de l'arrêt).
+- **Catégorie** : `jurisprudence_conseil_etat`.
+- **Métadonnées** : Extraction automatique du numéro et de la date depuis le nom de fichier.
+
 ---
 
 ## 10. Évolutions Futures (TODO)
 
 | Priorité | Fonctionnalité | Description |
 |----------|----------------|-------------|
-| 🟢 Basse | Ingestion Jurisprudence | Indexer les PDFs du scraper dans Supabase |
+| ✅ Terminée | Ingestion Jurisprudence | 316 Arrêts Conseil d'État intégrés |
+| ✅ Terminée | Intégration RAG | Consultant & Plaidoirie utilisent désormais la jurisprudence |
 | 🟢 Basse | Streaming | Affichage progressif des réponses (SSE) |
 | 🟢 Basse | Historique | Sauvegarder les conversations en base |
 
@@ -369,4 +382,4 @@ Un robot d'indexation sophistiqué pour récupérer les décisions du Conseil d'
 
 ---
 
-*Documentation générée le 08/01/2026 - Version 1.3 (Mobile UI & Scraping)*
+*Documentation générée le 09/01/2026 - Version 1.4 (Jurisprudence Integration)*

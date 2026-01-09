@@ -318,7 +318,7 @@ class RAGService:
 {situation}
 
 ## المصادر القانونية المتاحة:
-(تشمل نصوص القوانين + اجتهادات المحكمة العليا)
+(تشمل نصوص القوانين، اجتهادات المحكمة العليا، وقرارات مجلس الدولة)
 {context}
 
 ---
@@ -401,7 +401,7 @@ class RAGService:
             context += f"\n\n### [{source_type} - مصدر {i}: {source_name}]\n{doc}\n"
     
         # 5. Professional "Golden Pleading" Prompt
-        prompt = f"""أنت محامٍ جزائري خبير "نابغ" (Top-Tier Lawyer) أمام المحكمة العليا.
+        prompt = f"""أنت محامٍ جزائري خبير "نابغ" (Top-Tier Lawyer) أمام المحكمة العليا ومجلس الدولة.
 مهمتك: صياغة **{pleading_type}** احترافية جداً تحاكي "المرافعات الذهبية" من حيث البلاغة، الحجة الدامغة، والهيكلة الصارمة.
 
 ═══════════════════════════════════════
@@ -475,8 +475,8 @@ class RAGService:
 
 
     def search_jurisprudence(self, legal_issue: str, chamber=None, top_k=20):
-        # Jurisprudence Mode - ALWAYS filter by category
-        filters = {"category": "jurisprudence"}
+        # Jurisprudence Mode - Filter by both Supreme Court and Conseil d'État
+        filters = {"category": ["jurisprudence", "jurisprudence_conseil_etat"]}
         
         # If chamber is specified, append it to query (since we lack metadata field for now)
         search_query = legal_issue
@@ -489,7 +489,7 @@ class RAGService:
         truncated_docs = [d[:1200] for d in docs[:5]]  # 5 docs, 1200 chars each
         context = "\n".join([f"Arrêt {i+1}: {d}" for i, d in enumerate(truncated_docs)])
         
-        prompt = f"""بصفتك باحثاً في الاجتهاد القضائي (المحكمة العليا).
+        prompt = f"""بصفتك باحثاً في الاجتهاد القضائي (المحكمة العليا ومجلس الدولة).
 المسألة: {legal_issue}
 القرارات المستخرجة:
 {context}
@@ -497,13 +497,13 @@ class RAGService:
 المطلوب:
 1. استخرج المبادئ القانونية بدقة.
 2. لكل مبدأ، **يجب** إدراج "نص المبدأ" كما ورد في القرار بين علامتي اقتباس.
-3. اذكر رقم القرار وتاريخه إن وجد في النص.
+3. اذكر رقم القرار وتاريخه والجهة المصدرة (المحكمة العليا أو مجلس الدولة) إن وجد في النص.
 4. وضح هل الاجتهاد مستقر أم هناك تناقض.
 
 التنسيق المطلوب:
 - **المبدأ:** [شرح المبدأ]
 - **النص المقتبس:** "...[النص]..."
-- **المرجع:** قرار رقم [X] بتاريخ [Y] (إن وجد)"""
+- **المرجع:** قرار رقم [X] بتاريخ [Y] - [الجهة] (إن وجد)"""
 
         response = generate_with_retry(self.model, prompt)
         
