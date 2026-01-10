@@ -476,14 +476,29 @@ class RAGService:
 
     def search_jurisprudence(self, legal_issue: str, chamber=None, top_k=20):
         # Jurisprudence Mode - Filter by both Supreme Court and Conseil d'État
-        filters = {"category": ["jurisprudence", "jurisprudence_conseil_etat"]}
+        # Note: RPC match_documents does not support list filters, so we fetch all and filter in Python
+        # filters = {"category": ["jurisprudence", "jurisprudence_conseil_etat"]}
         
-        # If chamber is specified, append it to query (since we lack metadata field for now)
+        # If chamber is specified, append it to query
         search_query = legal_issue
         if chamber:
              search_query += f" ({chamber})"
              
-        docs, metas = self._retrieve(search_query, filters=filters, top_k=top_k)
+        # Fetch broad (50) then filter
+        raw_docs, raw_metas = self._retrieve(search_query, filters=None, top_k=50)
+        
+        docs = []
+        metas = []
+        target_categories = ["jurisprudence", "jurisprudence_conseil_etat"]
+        
+        for d, m in zip(raw_docs, raw_metas):
+            if m.get("category") in target_categories:
+                docs.append(d)
+                metas.append(m)
+        
+        # Slice to requested top_k
+        docs = docs[:top_k]
+        metas = metas[:top_k]
         
         # Limit context to avoid token limit (Groq max ~12K tokens)
         truncated_docs = [d[:1200] for d in docs[:5]]  # 5 docs, 1200 chars each
